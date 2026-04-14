@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="sw">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Spark - Darnix Group</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & ReactDOM CDN -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Babel for JSX CDN -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- QRCode Library CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.1/qrcode.min.js"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .animate-gradient-x {
+            background-size: 200% 200%;
+            animation: gradient-x 15s ease infinite;
+        }
+        @keyframes gradient-x {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #4f46e5;
+            cursor: pointer;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+    </style>
+</head>
+<body class="bg-slate-50">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        function App() {
+            const [value, setValue] = useState('https://darnixgroup.com');
+            const [size, setSize] = useState(256);
+            const [fgColor, setFgColor] = useState('#000000');
+            const [bgColor, setBgColor] = useState('#ffffff');
+            const [isLoading, setIsLoading] = useState(false);
+            const [isLibReady, setIsLibReady] = useState(false);
+            const qrRef = useRef(null);
+
+            // Check if library is ready
+            useEffect(() => {
+                const checkLib = () => {
+                    if (window.QRCode || window.qrcode) {
+                        setIsLibReady(true);
+                    } else {
+                        setTimeout(checkLib, 100);
+                    }
+                };
+                checkLib();
+            }, []);
+
+            // Initialize Lucide icons after every render
+            useEffect(() => {
+                if (window.lucide) {
+                    lucide.createIcons();
+                }
+            });
+
+            // Handle QR generation
+            useEffect(() => {
+                if (!value || !isLibReady) return;
+                setIsLoading(true);
+                const timer = setTimeout(() => {
+                    generateQR();
+                    setIsLoading(false);
+                }, 500);
+                return () => clearTimeout(timer);
+            }, [value, size, fgColor, bgColor, isLibReady]);
+
+            const generateQR = () => {
+                const container = qrRef.current;
+                if (!container) return;
+                
+                const qrLibrary = window.QRCode || window.qrcode;
+                if (!qrLibrary) return;
+
+                container.innerHTML = '';
+                const canvas = document.createElement('canvas');
+                
+                qrLibrary.toCanvas(canvas, value, {
+                    width: parseInt(size),
+                    margin: 2,
+                    color: {
+                        dark: fgColor,
+                        light: bgColor
+                    }
+                }, function (error) {
+                    if (error) console.error(error);
+                    container.appendChild(canvas);
+                    canvas.style.width = '100%';
+                    canvas.style.height = 'auto';
+                    canvas.style.borderRadius = '1.5rem';
+                });
+            };
+
+            const downloadQR = () => {
+                const canvas = qrRef.current.querySelector('canvas');
+                if (canvas) {
+                    const url = canvas.toDataURL('image/png');
+                    const link = document.createElement('a');
+                    link.download = `qrcode-darnix-${Date.now()}.png`;
+                    link.href = url;
+                    link.click();
+                }
+            };
+
+            return (
+                <div className="min-h-screen relative overflow-x-hidden">
+                    {/* Background Image with Overlay */}
+                    <div 
+                        className="fixed inset-0 -z-20 bg-cover bg-center bg-no-repeat scale-105"
+                        style={{ backgroundImage: 'url("https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop")' }}
+                    ></div>
+                    <div className="fixed inset-0 -z-10 bg-white/70 backdrop-blur-[2px]"></div>
+
+                    {/* Header */}
+                    <header className="sticky top-0 z-50 w-full border-b border-white/20 bg-white/40 backdrop-blur-xl">
+                        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-200">
+                                    <i data-lucide="qr-code" className="text-white w-6 h-6"></i>
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="text-xl font-black tracking-tighter bg-gradient-to-r from-indigo-700 to-blue-700 bg-clip-text text-transparent leading-none">
+                                        QR SPARK
+                                    </span>
+                                    <span className="text-[10px] font-bold text-indigo-500 tracking-[0.2em] uppercase">
+                                        Darnix Group
+                                    </span>
+                                </div>
+                            </div>
+                            <nav className="hidden md:flex items-center gap-8">
+                                <a href="#" className="text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-indigo-600 transition-colors">Nyumbani</a>
+                                <a href="#" className="text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-indigo-600 transition-colors">Huduma</a>
+                                <a href="#" className="text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-indigo-600 transition-colors">Msaada</a>
+                            </nav>
+                            <button className="rounded-full px-6 py-2 border border-white/40 bg-white/20 hover:bg-white/40 transition-all font-black text-[10px] uppercase tracking-widest">
+                                Ingia
+                            </button>
+                        </div>
+                    </header>
+
+                    <main className="container mx-auto px-4 py-16 max-w-6xl relative">
+                        <div className="text-center mb-20">
+                            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-100 text-indigo-700 text-[10px] font-black uppercase tracking-widest mb-6 border border-indigo-200 shadow-sm">
+                                <i data-lucide="sparkles" className="w-3 h-3"></i> Toleo Jipya la 2024
+                            </div>
+                            <h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-6 text-slate-900 leading-[0.9]">
+                                Tengeneza QR Code <br />
+                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-600 animate-gradient-x">
+                                    Yenye Mvuto wa Kisasa
+                                </span>
+                            </h1>
+                            <p className="text-lg text-slate-600 max-w-2xl mx-auto font-medium">
+                                Badili link au maandishi kuwa QR Code ya kipekee kwa sekunde chache. 
+                                Teknolojia ya kisasa kutoka <span className="text-indigo-600 font-bold">Darnix Group</span>.
+                            </p>
+                        </div>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
+                            {/* Controls Section */}
+                            <div className="lg:col-span-7 space-y-8">
+                                <div className="glass-card shadow-2xl rounded-[2rem] overflow-hidden">
+                                    <div className="bg-white/20 border-b border-white/20 p-8">
+                                        <h2 className="text-xl flex items-center gap-3 font-black tracking-tight">
+                                            <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center">
+                                                <i data-lucide="settings-2" className="w-4 h-4 text-indigo-600"></i>
+                                            </div>
+                                            Sanidi QR Code Yako
+                                        </h2>
+                                        <p className="text-slate-500 font-medium text-sm mt-1">Weka maelezo unayotaka yawe kwenye QR Code</p>
+                                    </div>
+                                    <div className="p-8 space-y-10">
+                                        <div className="space-y-4">
+                                            <label className="text-xs font-bold uppercase tracking-widest text-slate-500">Link au Maandishi</label>
+                                            <input 
+                                                type="text" 
+                                                value={value}
+                                                onChange={(e) => setValue(e.target.value)}
+                                                className="w-full h-14 border border-white/40 bg-white/50 focus:ring-2 focus:ring-indigo-500 rounded-2xl text-lg font-medium px-6 outline-none transition-all"
+                                                placeholder="https://darnixgroup.com"
+                                            />
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                                            <div className="space-y-8">
+                                                <div className="space-y-5">
+                                                    <div className="flex justify-between items-center">
+                                                        <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-500">
+                                                            <i data-lucide="maximize" className="w-4 h-4"></i> Ukubwa
+                                                        </label>
+                                                        <span className="text-xs font-black text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md">{size}px</span>
+                                                    </div>
+                                                    <input 
+                                                        type="range" 
+                                                        min="128" 
+                                                        max="512" 
+                                                        step="8" 
+                                                        value={size} 
+                                                        onChange={(e) => setSize(e.target.value)} 
+                                                        className="w-full h-2 bg-indigo-100 rounded-lg appearance-none cursor-pointer accent-indigo-600" 
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-8">
+                                                <div className="space-y-5">
+                                                    <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-500">
+                                                        <i data-lucide="palette" className="w-4 h-4"></i> Rangi za QR
+                                                    </label>
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        <div className="space-y-3">
+                                                            <span className="text-[10px] uppercase tracking-widest text-slate-400 font-black">Mbele</span>
+                                                            <div className="flex items-center gap-3 p-2 border border-white/40 rounded-2xl bg-white/50 backdrop-blur-md">
+                                                                <input 
+                                                                    type="color" 
+                                                                    value={fgColor} 
+                                                                    onChange={(e) => setFgColor(e.target.value)}
+                                                                    className="w-10 h-10 rounded-xl cursor-pointer border-none bg-transparent"
+                                                                />
+                                                                <span className="text-[10px] font-black uppercase font-mono">{fgColor}</span>
+                                                            </div>
+                                                        </div>
+                                                        <div className="space-y-3">
+                                                            <span className="text-[10px] uppercase tracking-widest text-slate-400 font-black">Nyuma</span>
+                                                            <div className="flex items-center gap-3 p-2 border border-white/40 rounded-2xl bg-white/50 backdrop-blur-md">
+                                                                <input 
+                                                                    type="color" 
+                                                                    value={bgColor} 
+                                                                    onChange={(e) => setBgColor(e.target.value)}
+                                                                    className="w-10 h-10 rounded-xl cursor-pointer border-none bg-transparent"
+                                                                />
+                                                                <span className="text-[10px] font-black uppercase font-mono">{bgColor}</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="p-6 bg-white/20 border-t border-white/20 flex justify-end">
+                                        <button onClick={() => { setValue('https://darnixgroup.com'); setSize(256); setFgColor('#000000'); setBgColor('#ffffff'); }} className="text-slate-500 hover:text-indigo-600 font-bold text-[10px] uppercase tracking-widest flex items-center gap-2">
+                                            <i data-lucide="refresh-cw" className="w-4 h-4"></i> Rudisha Mwanzo
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Preview Section */}
+                            <div className="lg:col-span-5 sticky top-24">
+                                <div className="border-2 border-white/40 bg-white/60 backdrop-blur-3xl shadow-2xl rounded-[2.5rem] overflow-hidden">
+                                    <div className="text-center pb-2 pt-8">
+                                        <span className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.3em]">Muonekano wa QR</span>
+                                    </div>
+                                    <div className="p-10 flex flex-col items-center gap-10">
+                                        <div className="relative group">
+                                            <div className={`p-8 rounded-[2rem] bg-white shadow-2xl border border-slate-100 relative overflow-hidden transition-all duration-500 ${isLoading ? 'opacity-50 scale-95' : 'opacity-100 scale-100'}`}>
+                                                <div ref={qrRef}></div>
+                                            </div>
+                                            {isLoading && (
+                                                <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
+                                                    <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                                                    <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest animate-pulse">Inatengenezwa...</span>
+                                                </div>
+                                            )}
+                                            <div className="absolute -top-4 -right-4 w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-xl rotate-12 group-hover:rotate-0 transition-transform duration-500">
+                                                <i data-lucide="sparkles" className="text-white w-6 h-6"></i>
+                                            </div>
+                                        </div>
+
+                                        <button 
+                                            onClick={downloadQR}
+                                            disabled={isLoading}
+                                            className="w-full h-16 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl shadow-xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 transition-all active:scale-95 disabled:opacity-50"
+                                        >
+                                            <i data-lucide="download" className="w-5 h-5"></i> Pakua QR Code (PNG)
+                                        </button>
+                                    </div>
+                                    <div className="p-6 bg-indigo-600 border-t border-indigo-500">
+                                        <p className="text-[10px] text-center text-white font-black uppercase tracking-[0.4em]">
+                                            QR SPARK ENGINE v2.0 • DARNIX GROUP
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="mt-10 p-8 bg-white/40 backdrop-blur-xl rounded-[2rem] border border-white/40 shadow-sm">
+                                    <h3 className="text-xs font-black mb-4 flex items-center gap-3 uppercase tracking-widest">
+                                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-lg shadow-green-200"></div>
+                                        Nukuu ya Darnix
+                                    </h3>
+                                    <p className="text-xs text-slate-600 leading-relaxed font-medium italic">
+                                        "QR codes hizi ni za kudumu na hazina kikomo cha matumizi. Teknolojia yetu inahakikisha usalama na ubora wa hali ya juu kwa kila QR inayotengenezwa."
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </main>
+
+                    <footer className="mt-32 border-t border-white/20 py-20 bg-white/40 backdrop-blur-2xl">
+                        <div className="container mx-auto px-4 text-center">
+                            <div className="flex flex-col items-center gap-4 mb-10">
+                                <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-2xl shadow-indigo-200">
+                                    <i data-lucide="qr-code" className="text-white w-6 h-6"></i>
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="text-2xl font-black tracking-tighter text-slate-900">QR SPARK</span>
+                                    <span className="text-[10px] font-black text-indigo-500 tracking-[0.5em] uppercase">Darnix Group</span>
+                                </div>
+                            </div>
+                            
+                            <p className="text-sm text-slate-500 mb-10 max-w-md mx-auto font-medium">
+                                Imetengenezwa kwa upendo na <span className="text-indigo-600 font-black">Darnix Group</span>. 
+                                Tunabadili ulimwengu kupitia teknolojia ya kisasa na ubunifu usio na kikomo.
+                            </p>
+
+                            <div className="pt-10 border-t border-slate-200/50">
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                                    &copy; 2024 DARNIX GROUP. HAKI ZOTE ZIMEHIFADHIWA.
+                                </p>
+                            </div>
+                        </div>
+                    </footer>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
